@@ -17,19 +17,20 @@ var leftHip;
 var leftFoot;
 var upperLeftArm;
 var lowerLeftArm;
-var originX=150;
+var originX=250;
 var originY=250;
-var hipLimits = [-10,10];
-var kneeLimits = [-0.25,1];
-var ankleLimits = [-0.25,1];
-var elbowLimits = [-30,0];
-var shoulderLimits = [-10,10];
+var hipLimits = [-20,20];
+var kneeLimits = [0,20];
+var ankleLimits = [-20,20];
+var elbowLimits = [-40,0];
+var shoulderLimits = [-25,30];
 var CATEGORY_BODYPARTS = 0x0001;  // 0000000000000001 in binary
 var CATEGORY_GROUND = 0x0002; // 0000000000000010 in binary
 var MASK_BODYPARTS = CATEGORY_GROUND;
 var MASK_GROUND = -1; 
-var thighMaxAngle = 7;
+var thighMaxAngle = 15;
 var walkSpeed = 1;
+var motorTorque = 20;
 
 function create() {
  
@@ -67,28 +68,28 @@ function create() {
 
     rightLeg = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY+160, 2);
     rightLeg.setRectangle(15, 80, 0, 0, 0);
-    rightKnee = game.physics.box2d.revoluteJoint(rightThigh, rightLeg, 0, 30, 0, -40,0,20,true,kneeLimits[0],kneeLimits[1],true);
+    rightKnee = game.physics.box2d.revoluteJoint(rightThigh, rightLeg, 0, 30, 0, -40,0,motorTorque,true,kneeLimits[0],kneeLimits[1],true);
 
     rightFoot = new Phaser.Physics.Box2D.Body(this.game, null, originX,originY+200, 2);
     rightFoot.setRectangle(50, 15, 0, 0, 0);
-    rightAnkle = game.physics.box2d.revoluteJoint(rightLeg, rightFoot, 0, 40, -10, 0,0,0,false,ankleLimits[0], ankleLimits[1], true);
+    rightAnkle = game.physics.box2d.revoluteJoint(rightLeg, rightFoot, 0, 40, -10, 0,0,motorTorque,true,ankleLimits[0], ankleLimits[1], true);
 
     upperRightArm = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY, 2);
     upperRightArm.setRectangle(15, 80, 0, 0, 0);
 
     lowerRightArm = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY, 2);
     lowerRightArm.setRectangle(15, 80, 0, 0, 0);
-    rightElbow = game.physics.box2d.revoluteJoint(upperRightArm,lowerRightArm,  0, 40, 0, -30,0,0,false,elbowLimits[0],elbowLimits[1],true);
+    rightElbow = game.physics.box2d.revoluteJoint(upperRightArm,lowerRightArm,  0, 40, 0, -30,0,motorTorque,false,elbowLimits[0],elbowLimits[1],true);
 
     body = new Phaser.Physics.Box2D.Body(this.game, null, originX,originY, 2);
-    body.setRectangle(50, 120, 0, 0, 0);
+    body.setRectangle(40, 120, 0, 0, 0);
     body.static = true;
     head = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY-50, 2);
     head.setCircle(25, 25, 0, 0, 0);
     var neck = game.physics.box2d.weldJoint(head, body, 0,50,-25,-45);
  
-    rightHip = game.physics.box2d.revoluteJoint(body, rightThigh, 0, 40, 0, -50,0,20,true,hipLimits[0], hipLimits[1], true);
-    rightShoulder = game.physics.box2d.revoluteJoint(upperRightArm, body, 0, -50, 0, -60,0,20,true,shoulderLimits[0],shoulderLimits[1],true);
+    rightHip = game.physics.box2d.revoluteJoint(body, rightThigh, 0, 40, 0, -50,0,motorTorque,true,hipLimits[0], hipLimits[1], true);
+    rightShoulder = game.physics.box2d.revoluteJoint(upperRightArm, body, 0, -50, 0, -60,0,motorTorque,true,shoulderLimits[0],shoulderLimits[1],true);
     //prismatic joint between the piston and the ground, this joints purpose is just to restrict the piston from moving on the x axis
     //game.physics.box2d.prismaticJoint(ground, body, 0, 1, 0, 0, 0, 0);
 
@@ -97,20 +98,20 @@ function create() {
 
     leftLeg = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY+160, 2);
     leftLeg.setRectangle(15, 80, 0, 0, 0);
-    leftKnee = game.physics.box2d.revoluteJoint(leftThigh, leftLeg, 0, 30, 0, -40,0,20,true,kneeLimits[0],kneeLimits[1],true);
-    leftHip = game.physics.box2d.revoluteJoint(body, leftThigh, 0, 40, 0, -50,0,20,true,hipLimits[0], hipLimits[1], true);
+    leftKnee = game.physics.box2d.revoluteJoint(leftThigh, leftLeg, 0, 30, 0, -40,0,motorTorque,true,kneeLimits[0],kneeLimits[1],true);
+    leftHip = game.physics.box2d.revoluteJoint(body, leftThigh, 0, 40, 0, -50,0,motorTorque,true,hipLimits[0], hipLimits[1], true);
 
     leftFoot = new Phaser.Physics.Box2D.Body(this.game, null, originX,originY+200, 2);
     leftFoot.setRectangle(50, 15, 0, 0, 0);
-    leftAnkle = game.physics.box2d.revoluteJoint(leftLeg, leftFoot, 0, 40, -10, 0,0,0,false,ankleLimits[0], ankleLimits[1], true);
+    leftAnkle = game.physics.box2d.revoluteJoint(leftLeg, leftFoot, 0, 40, -10, 0,0,motorTorque,true,ankleLimits[0], ankleLimits[1], true);
 
     upperLeftArm = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY, 2);
     upperLeftArm.setRectangle(15, 80, 0, 0, 0);
-    leftShoulder = game.physics.box2d.revoluteJoint(upperLeftArm, body, 0, -50, 0, -60,0,20,true,shoulderLimits[0],shoulderLimits[1],true);
+    leftShoulder = game.physics.box2d.revoluteJoint(upperLeftArm, body, 0, -50, 0, -60,0,motorTorque,true,shoulderLimits[0],shoulderLimits[1],true);
 
     lowerLeftArm = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY, 2);
     lowerLeftArm.setRectangle(15, 80, 0, 0, 0);
-    leftElbow = game.physics.box2d.revoluteJoint(upperLeftArm,lowerLeftArm,  0, 40, 0, -30,0,0,false,elbowLimits[0],elbowLimits[1],true);
+    leftElbow = game.physics.box2d.revoluteJoint(upperLeftArm,lowerLeftArm,  0, 40, 0, -30,0,motorTorque,false,elbowLimits[0],elbowLimits[1],true);
 
     //setup collision categories
     leftFoot.setCollisionCategory(CATEGORY_BODYPARTS);
@@ -161,6 +162,10 @@ function update(){
   resetWalker();
   if(takingRightStep)
   {
+    rightKnee.SetMotorSpeed(walkSpeed);
+    leftKnee.SetMotorSpeed(-walkSpeed); 
+    rightAnkle.SetMotorSpeed(walkSpeed);
+    leftAnkle.SetMotorSpeed(-walkSpeed); 
     rightHip.SetMotorSpeed(walkSpeed);
     leftHip.SetMotorSpeed(-walkSpeed); 
     rightShoulder.SetMotorSpeed(-walkSpeed);
@@ -173,6 +178,12 @@ function update(){
    }
   else
   {
+    rightKnee.SetMotorSpeed(-walkSpeed);
+    leftKnee.SetMotorSpeed(walkSpeed); 
+    rightKnee.SetMotorSpeed(-walkSpeed);
+    leftKnee.SetMotorSpeed(walkSpeed); 
+    rightAnkle.SetMotorSpeed(-walkSpeed);
+    leftAnkle.SetMotorSpeed(walkSpeed); 
     leftHip.SetMotorSpeed(walkSpeed);
     rightHip.SetMotorSpeed(-walkSpeed); 
     rightShoulder.SetMotorSpeed(walkSpeed);
