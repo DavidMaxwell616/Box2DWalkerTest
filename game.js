@@ -23,14 +23,25 @@ var hipLimits = [-20,20];
 var kneeLimits = [0,20];
 var ankleLimits = [-20,20];
 var elbowLimits = [-40,0];
-var shoulderLimits = [-25,30];
+var shoulderLimits = [-50,50];
 var CATEGORY_BODYPARTS = 0x0001;  // 0000000000000001 in binary
 var CATEGORY_GROUND = 0x0002; // 0000000000000010 in binary
 var MASK_BODYPARTS = CATEGORY_GROUND;
 var MASK_GROUND = -1; 
-var thighMaxAngle = 15;
+var thighMaxAngle = 12;
 var walkSpeed = 1;
-var motorTorque = 20;
+var motorTorque = 40;
+var movementState = {
+  Still: 0,
+  Walk: 1,
+  Jump: 2,
+  Run: 3,
+  Somersault: 4,
+  Cartwheel: 5,
+  Leapfrog: 6
+};
+var movement;
+var text = [];
 
 function create() {
  
@@ -40,14 +51,13 @@ function create() {
     game.physics.startSystem(Phaser.Physics.BOX2D);
     
     game.physics.box2d.gravity.y = 500;
-
+    game.physics.box2d.restitution = 0.25;
     game.physics.box2d.setBoundsToWorld();
     
     //  Create a static rectangle body for the ground. This gives us something solid to attach our crank to
     ground = new Phaser.Physics.Box2D.Body(this.game, null, game.world.centerX, 490, 0);
     ground.setRectangle(800, 20, 0, 0, 0);
-    
-
+    ground.friction=1;
 
  //Revolute Joint Parameters:
  //bodyA, 
@@ -83,10 +93,10 @@ function create() {
 
     body = new Phaser.Physics.Box2D.Body(this.game, null, originX,originY, 2);
     body.setRectangle(40, 120, 0, 0, 0);
-    body.static = true;
     head = new Phaser.Physics.Box2D.Body(this.game, null, originX, originY-50, 2);
     head.setCircle(25, 25, 0, 0, 0);
     var neck = game.physics.box2d.weldJoint(head, body, 0,50,-25,-45);
+   // body.static = true;
  
     rightHip = game.physics.box2d.revoluteJoint(body, rightThigh, 0, 40, 0, -50,0,motorTorque,true,hipLimits[0], hipLimits[1], true);
     rightShoulder = game.physics.box2d.revoluteJoint(upperRightArm, body, 0, -50, 0, -60,0,motorTorque,true,shoulderLimits[0],shoulderLimits[1],true);
@@ -150,59 +160,96 @@ function create() {
     game.input.onDown.add(mouseDragStart, this);
     game.input.addMoveCallback(mouseDragMove, this);
     game.input.onUp.add(mouseDragEnd, this);
-    
+    const values = Object.values(movementState)
+ 
+    for (let index = 0; index < values.length; index++) {
+      var label = Object.keys(movementState)[index];
+      text[index] = game.add.text(
+        100, 
+        index*20+20, 
+        label, 
+      { font: "15px Arial", fill: "#ffffff"});
+  
+      text[index].anchor.set(0.5);
+      
+      text[index].inputEnabled = true;
+      text[index].events.onInputDown.add(down, this);
+      text[index].events.onInputOver.add(over, this);
+      text[index].events.onInputOut.add(out, this);
+    }
+    movement = Object.keys(movementState)[0];
+  }
+
+function over(item){
+  item.fill = "#ffff44";
+}
+function out(item){
+  item.fill = "#ffffff";
+}
+function down(item) {
+
+    item.text = "clicked " + 1 + " times";
+
 }
 
 function mouseDragStart() { game.physics.box2d.mouseDragStart(game.input.mousePointer); }
 function mouseDragMove() {  game.physics.box2d.mouseDragMove(game.input.mousePointer); }
 function mouseDragEnd() {   game.physics.box2d.mouseDragEnd(); }
 
-function update(){
-  if(body.x<0 || body.x>game.world.width)
-  resetWalker();
-  if(takingRightStep)
-  {
-    rightKnee.SetMotorSpeed(walkSpeed);
-    leftKnee.SetMotorSpeed(-walkSpeed); 
-    rightAnkle.SetMotorSpeed(walkSpeed);
-    leftAnkle.SetMotorSpeed(-walkSpeed); 
-    rightHip.SetMotorSpeed(walkSpeed);
-    leftHip.SetMotorSpeed(-walkSpeed); 
-    rightShoulder.SetMotorSpeed(-walkSpeed);
-    leftShoulder.SetMotorSpeed(walkSpeed); 
-  if(rightThigh.angle>thighMaxAngle)
-  {
-    takingRightStep = false;
-    takingLeftStep = true;
-   }
-   }
-  else
-  {
-    rightKnee.SetMotorSpeed(-walkSpeed);
-    leftKnee.SetMotorSpeed(walkSpeed); 
-    rightKnee.SetMotorSpeed(-walkSpeed);
-    leftKnee.SetMotorSpeed(walkSpeed); 
-    rightAnkle.SetMotorSpeed(-walkSpeed);
-    leftAnkle.SetMotorSpeed(walkSpeed); 
-    leftHip.SetMotorSpeed(walkSpeed);
-    rightHip.SetMotorSpeed(-walkSpeed); 
-    rightShoulder.SetMotorSpeed(walkSpeed);
-    leftShoulder.SetMotorSpeed(-walkSpeed); 
-  if(leftThigh.angle>thighMaxAngle)
-  {
-    takingRightStep = true;
-    takingLeftStep = false;
-   }
+function onTextButtonPressed(){
 
-  }
+}
+function update(){
+switch (movement) {
+  case movementState.Still:
+    
+    break;
+  case movementState.Walk:
+    if(takingRightStep)
+    {
+      rightKnee.SetMotorSpeed(-walkSpeed);
+      leftKnee.SetMotorSpeed(walkSpeed); 
+      rightAnkle.SetMotorSpeed(walkSpeed);
+      leftAnkle.SetMotorSpeed(-walkSpeed); 
+      rightHip.SetMotorSpeed(walkSpeed*2);
+      leftHip.SetMotorSpeed(-walkSpeed*2); 
+      rightShoulder.SetMotorSpeed(-walkSpeed*2);
+      leftShoulder.SetMotorSpeed(walkSpeed*2); 
+      if(upperRightArm.angle>thighMaxAngle)
+    {
+      takingRightStep = false;
+      takingLeftStep = true;
+     }
+     }
+    else
+    {
+      rightKnee.SetMotorSpeed(-walkSpeed);
+      leftKnee.SetMotorSpeed(walkSpeed); 
+      rightAnkle.SetMotorSpeed(-walkSpeed);
+      leftAnkle.SetMotorSpeed(walkSpeed); 
+      leftHip.SetMotorSpeed(walkSpeed);
+      rightHip.SetMotorSpeed(-walkSpeed); 
+      rightShoulder.SetMotorSpeed(walkSpeed*2);
+      leftShoulder.SetMotorSpeed(-walkSpeed*2); 
+      if(leftThigh.angle>thighMaxAngle)
+    {
+      takingRightStep = true;
+      takingLeftStep = false;
+     }
   
+    }
+  
+  default:
+    break;
 }
-function resetWalker(){
- // head.x = 200;
-//  head.y = 100;
+
+
+
 }
+
+
 function render() {
     
     game.debug.box2dWorld();
-    
+   // game.debug.body(head, 'rgb(255,255,0)');
 }
